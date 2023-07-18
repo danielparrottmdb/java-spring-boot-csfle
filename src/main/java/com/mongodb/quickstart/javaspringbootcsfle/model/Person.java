@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-@Document("personsEncrypted")
+@Document("persons")
 public class Person {
     @Id
     @JsonSerialize(using = ToStringSerializer.class)

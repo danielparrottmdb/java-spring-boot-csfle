@@ -5,6 +5,7 @@ import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import com.mongodb.quickstart.javaspringbootcsfle.model.Person;
 import com.mongodb.quickstart.javaspringbootcsfle.services.KeyGenerationService;
 import org.bson.BsonDocument;
 import org.bson.Document;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 
 import java.util.*;
 
@@ -20,7 +22,7 @@ import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY
 import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY_VAULT_DB;
 
 @SpringBootApplication
-public class JavaSpringBootCSFLEApplication {
+public class JavaSpringBootCSFLEApplication extends AbstractMongoClientConfiguration {
 
     private static final String KEY_VAULT_NAMESPACE = KEY_VAULT_DB + "." + KEY_VAULT_COLL;
     @Value("${spring.data.mongodb.uri}")
@@ -41,11 +43,18 @@ public class JavaSpringBootCSFLEApplication {
         SpringApplication.run(JavaSpringBootCSFLEApplication.class, args);
     }
 
-    @Bean
+    
+    @Override
+    protected String getDatabaseName() {
+        return DATABASE;
+    }
+
+    @Override
     public MongoClient mongoClient() {
 
 //        String dekId = "<paste-base-64-encoded-data-encryption-key-id>>";
 
+        System.out.println("==== HERE ====\n\n");
         final Map<String, Map<String, Object>> kmsProviders = keyGenerationService.getKmsProviders();
 
         final String localDEK = keyGenerationService.generateLocalKeyId(KEY_VAULT_NAMESPACE, kmsProviders, connectionString);
@@ -55,7 +64,9 @@ public class JavaSpringBootCSFLEApplication {
         final Map<String, BsonDocument> schemaMap = generateSchemaMap(localDEK);
 
         Map<String, Object> extraOptions = new HashMap<String, Object>();
-        extraOptions.put("cryptSharedLibPath", CRYPT_SHARED_LIB_PATH);
+        // extraOptions.put("cryptSharedLibPath", CRYPT_SHARED_LIB_PATH);
+        // extraOptions.put("cryptSharedLibRequired", true);
+        extraOptions.put("mongocryptdBypassSpawn", true);
 
         MongoClientSettings clientSettings = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(connectionString))
@@ -69,7 +80,11 @@ public class JavaSpringBootCSFLEApplication {
 //        Document docSecure = MongoClients.create(clientSettings).getDatabase("personsDB").getCollection("personsEncrypted").find(eq("firstName", "Megha")).first();
 //        System.out.println(docSecure.toJson());
 
-        return MongoClients.create(clientSettings);
+        MongoClient client = MongoClients.create(clientSettings);
+
+        // Document p = new Document().append("firstName", "Elmer").append("lastName", "Fudd").append("aadharNumber", "54321");
+        // client.getDatabase(this.getDatabaseName()).getCollection(COLLECTION).insertOne(p);
+        return client;
     }
 
     private Map<String, BsonDocument> generateSchemaMap(final String DEK_ID) {
