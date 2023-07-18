@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.10</version>
+        <version>3.1.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.mongodb.quickstart</groupId>
@@ -14,8 +14,8 @@
     <name>java-spring-boot-csfle</name>
     <description>java-spring-boot-csfle</description>
     <properties>
-        <java.version>11</java.version>
-        <spring-boot-starter-parent.version>2.7.10</spring-boot-starter-parent.version>
+        <java.version>17</java.version>
+        <spring-boot-starter-parent.version>3.1.1</spring-boot-starter-parent.version>
         <mongodb-crypt.version>1.8.0</mongodb-crypt.version>
     </properties>
     <dependencies>

@@ -1,19 +1,34 @@
 package com.mongodb.quickstart.javaspringbootcsfle;
 
 import com.mongodb.AutoEncryptionSettings;
+import com.mongodb.ClientEncryptionSettings;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import com.mongodb.client.vault.ClientEncryption;
+import com.mongodb.client.vault.ClientEncryptions;
 import com.mongodb.quickstart.javaspringbootcsfle.model.Person;
 import com.mongodb.quickstart.javaspringbootcsfle.services.KeyGenerationService;
+
+import org.bson.BsonBinary;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.Document;
+import org.bson.UuidRepresentation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.convert.PropertyValueConverterFactory;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions.MongoConverterConfigurationAdapter;
+import org.springframework.data.mongodb.core.convert.encryption.MongoEncryptionConverter;
+import org.springframework.data.mongodb.core.encryption.Encryption;
+import org.springframework.data.mongodb.core.encryption.EncryptionKeyResolver;
+import org.springframework.data.mongodb.core.encryption.MongoClientEncryption;
 
 import java.util.*;
 
@@ -22,7 +37,10 @@ import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY
 import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY_VAULT_DB;
 
 @SpringBootApplication
-public class JavaSpringBootCSFLEApplication extends AbstractMongoClientConfiguration {
+public class JavaSpringBootCSFLEApplication  extends AbstractMongoClientConfiguration {
+
+    @Autowired
+    ApplicationContext appContext;
 
     private static final String KEY_VAULT_NAMESPACE = KEY_VAULT_DB + "." + KEY_VAULT_COLL;
     @Value("${spring.data.mongodb.uri}")
@@ -43,19 +61,21 @@ public class JavaSpringBootCSFLEApplication extends AbstractMongoClientConfigura
         SpringApplication.run(JavaSpringBootCSFLEApplication.class, args);
     }
 
-    
     @Override
-    protected String getDatabaseName() {
-        return DATABASE;
+    public String getDatabaseName() {
+        return this.DATABASE;
     }
 
-    @Override
+    @Bean
     public MongoClient mongoClient() {
 
 //        String dekId = "<paste-base-64-encoded-data-encryption-key-id>>";
 
-        System.out.println("==== HERE ====\n\n");
+        System.out.println("==== HERE - with kAN ====\n\n");
         final Map<String, Map<String, Object>> kmsProviders = keyGenerationService.getKmsProviders();
+
+        // Unused locally but ensures the second-data-key used for explicit encryption exists 
+        keyGenerationService.generateLocalKeyId(KEY_VAULT_NAMESPACE, kmsProviders, connectionString, "second-data-key");
 
         final String localDEK = keyGenerationService.generateLocalKeyId(KEY_VAULT_NAMESPACE, kmsProviders, connectionString);
 
@@ -77,8 +97,6 @@ public class JavaSpringBootCSFLEApplication extends AbstractMongoClientConfigura
                         .extraOptions(extraOptions)
                         .build())
                 .build();
-//        Document docSecure = MongoClients.create(clientSettings).getDatabase("personsDB").getCollection("personsEncrypted").find(eq("firstName", "Megha")).first();
-//        System.out.println(docSecure.toJson());
 
         MongoClient client = MongoClients.create(clientSettings);
 
@@ -102,5 +120,38 @@ public class JavaSpringBootCSFLEApplication extends AbstractMongoClientConfigura
         schemaMap.put(DATABASE + "." + COLLECTION, BsonDocument.parse(jsonSchema.toJson()));
 
         return schemaMap;
+    }
+
+    @Bean
+    ClientEncryption clientEncryption() {
+        ClientEncryptionSettings encryptionSettings = ClientEncryptionSettings.builder()
+            .keyVaultNamespace(KEY_VAULT_DB + "." + KEY_VAULT_COLL)
+            .kmsProviders(keyGenerationService.getKmsProviders())
+            .keyVaultMongoClientSettings(MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString(connectionString))
+                .uuidRepresentation(UuidRepresentation.STANDARD)
+                .build()
+            )
+            .build();
+        
+        return ClientEncryptions.create(encryptionSettings);    
+    }
+
+    @Bean
+    MongoEncryptionConverter mongoEncrpytionConverter(ClientEncryption clientEncryption) {
+        Encryption<BsonValue, BsonBinary> encryption = MongoClientEncryption.just(clientEncryption);
+        EncryptionKeyResolver keyResolver = EncryptionKeyResolver.annotated((ctx) -> null);             
+
+        return new MongoEncryptionConverter(encryption, keyResolver);  
+    }
+
+    /*
+     * 
+     */
+    @Override
+    protected void configureConverters(MongoConverterConfigurationAdapter adapter) {
+        adapter.registerPropertyValueConverterFactory(
+            PropertyValueConverterFactory.beanFactoryAware(appContext)
+        );
     }
 }

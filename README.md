@@ -38,3 +38,14 @@ Use at your own risk; not a supported MongoDB product.
 
 ## Author
 - Megha Arora @ MongoDB.
+
+## TODO
+
+Bit of a mess.
+
+Swap generateKey to get key, generate if none.  The encoded UUID is a bit
+trippy.  Will probably error on startup now.  Yep, duplicate alt key name errors
+on the unique index.
+
+Switched persons/ to person/ for get.
+curl -X POST -H "Content-Type: application/json" -d '{"firstName": "Bugs", "lastName": "Bunny!!!", "aadharNumber": "12345"}' http://localhost:8080/person

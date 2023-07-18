@@ -11,4 +11,7 @@ public interface KeyGenerationService {
 
     String generateLocalKeyId(String keyVaultNamespace, Map<String, Map<String, Object>> kmsProviders,
                                      String connectionString);
+
+    String generateLocalKeyId(String keyVaultNamespace, Map<String, Map<String, Object>> kmsProviders,
+                                     String connectionString, String keyAltName);
 }

@@ -61,6 +61,10 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
     }
 
     public String generateLocalKeyId(String keyVaultNamespace, Map<String, Map<String, Object>> kmsProviders, String connectionString) {
+        return this.generateLocalKeyId(keyVaultNamespace, kmsProviders, connectionString, "demo-data-key");
+    }
+
+    public String generateLocalKeyId(String keyVaultNamespace, Map<String, Map<String, Object>> kmsProviders, String connectionString, String keyAltName) {
         createIndexOnKeyVaultCollection(connectionString);
 
         byte[] binaryKeyId = null;
@@ -68,7 +72,7 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
         // find the key
         MongoClient keyVaultClient = MongoClients.create(connectionString);
         MongoCollection<Document> keyVaultCollection = keyVaultClient.getDatabase(KEY_VAULT_DB).getCollection(KEY_VAULT_COLL);
-        Bson byKeyAltName = Filters.eq("keyAltNames", "demo-data-key");
+        Bson byKeyAltName = Filters.eq("keyAltNames", keyAltName);
         FindIterable<Document> keyDocs = keyVaultCollection.find(byKeyAltName);
         if (keyDocs.iterator().hasNext()) {
             Document keyDocument = keyDocs.first();
@@ -80,7 +84,7 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
             ClientEncryptionSettings clientEncryptionSettings = ClientEncryptionSettings.builder().keyVaultMongoClientSettings(mcs).keyVaultNamespace(keyVaultNamespace).kmsProviders(kmsProviders).build();
             ClientEncryption clientEncryption = ClientEncryptions.create(clientEncryptionSettings);
             List<String> keyAltNames = new ArrayList<>();
-            keyAltNames.add("demo-data-key");
+            keyAltNames.add(keyAltName);
             BsonBinary dataKeyId = clientEncryption.createDataKey(KMS_PROVIDER, new DataKeyOptions().keyAltNames(keyAltNames));
             binaryKeyId = dataKeyId.getData();
             clientEncryption.close();
