@@ -8,7 +8,6 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.vault.ClientEncryption;
 import com.mongodb.client.vault.ClientEncryptions;
-import com.mongodb.quickstart.javaspringbootcsfle.model.Person;
 import com.mongodb.quickstart.javaspringbootcsfle.services.KeyGenerationService;
 
 import org.bson.BsonBinary;
@@ -32,7 +31,6 @@ import org.springframework.data.mongodb.core.encryption.MongoClientEncryption;
 
 import java.util.*;
 
-import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY_VAULT_COLL;
 import static com.mongodb.quickstart.javaspringbootcsfle.constants.DBStrings.KEY_VAULT_DB;
 
